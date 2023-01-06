@@ -11,10 +11,27 @@ using System.Threading.Tasks;
 using System.Linq.Expressions;
 using Unity.VisualScripting;
 
+/// <summary>
+/// Used to serialize and deserialize meshes. In this case hand meshes provided by the grasp detection.
+/// Used to store and recall serialized data in and from JSON files.
+/// Inputs for serializing:
+///     unity mesh object
+///     Azure Spatial Anchor ID
+///     Handedness (left or right, represented as 0 or 1 integers)
+///     ID of Hand (first hand in route gets ID = 0, second gets ID = 1 and so on)
+/// Outputs:
+///     public dictionary key: Azure Spatial Anchor ID, value: [vertices(float list), triangles(int list), metadata(ID of Hand, Handedness)]
+///     
+/// Inputs for deserializing:
+///     filename of JSON file
+/// Outputs:
+///     dictionary key: Azure Spatial Anchor ID, value: [unity mesh object]
+/// </summary>
+
+
 [System.Serializable]
 class MeshSerializer : MonoBehaviour
 {
-    //public TextAsset jsonfile;
     [SerializeField]
     public float[] vertices;
     [SerializeField]
@@ -29,10 +46,10 @@ class MeshSerializer : MonoBehaviour
     public Color[] colors;
     public Dictionary<string, dynamic> Dict = new Dictionary<string, dynamic>();
     private string persistentPath = "";
-    //public string filename = "Route1";
 
 
-    public void SerializableMeshInfo(Mesh m, string AnchorID,int myHandedness, int Count)//, string LeftorRight) // Constructor: takes a mesh and fills out SerializableMeshInfo data structure which basically mirrors Mesh object's parts.
+    //serializes mesh and stores it in a public dict
+    public void SerializableMeshInfo(Mesh m, string AnchorID,int myHandedness, int Count)
     {
         vertices = new float[m.vertexCount * 3]; // initialize vertices array.
         for (int i = 0; i < m.vertexCount; i++) // Serialization: Vector3's values are stored sequentially.
@@ -49,15 +66,16 @@ class MeshSerializer : MonoBehaviour
         List<int> metadata_creation = new List<int>();
         metadata_creation.Add(Count);
         metadata_creation.Add(myHandedness);
-        List<IList> Meshdata = new List<IList>() { vertices, triangles, metadata_creation };// { vertices, normals, triangles };
+        List<IList> Meshdata = new List<IList>() { vertices, triangles, metadata_creation };
         Dict.Add(AnchorID, Meshdata);
-        //SaveData();
         }
+
+    //Saves the serialized public dict as a JSON file
     public void SaveData(string filename_savedata)
     {
         SetPaths();
         string savePath = persistentPath + filename_savedata + ".json";
-        //List<SerializableVector3> serveldata = SerializableVector3.GetSerializableList(veldata);
+
         string json = Newtonsoft.Json.JsonConvert.SerializeObject(Dict);
         Debug.Log(json);
 
@@ -70,13 +88,12 @@ class MeshSerializer : MonoBehaviour
     {
         persistentPath = Application.persistentDataPath + Path.AltDirectorySeparatorChar;
     }
-    // GetMesh gets a Mesh object from currently set data in this SerializableMeshInfo object.
-    // Sequential values are deserialized to Mesh original data types like Vector3 for vertices.
+    
+    //converts the Dictionary stored in the JSON file to a dict of Unity Mesh object and returns it
     public Dictionary<string, Mesh> GetMesh(string filename_getMesh)
     {
         
         byte[] bytes = UnityEngine.Windows.File.ReadAllBytes(persistentPath + filename_getMesh + ".json");
-        //string fileData = System.Text.Encoding.ASCII.GetString(jsonfile.bytes);
         string fileData = System.Text.Encoding.ASCII.GetString(bytes);
         Dictionary<string, List<float[]>> values = JsonConvert.DeserializeObject<Dictionary<string, List<float[]>>>(fileData);
         Dictionary<string,Mesh> CloudMeshDict = new Dictionary<string,Mesh>();
@@ -88,12 +105,11 @@ class MeshSerializer : MonoBehaviour
             Mesh m = new Mesh();
             vertices = values[key][0];
             List<int> trianglesintlist = new List<int>();
-            //normals = values[key][1] as float[];
             foreach (var f in values[key][1])
             {
                 int i = new int();
                 i = (int)f;
-                trianglesintlist.Add(i); //= (int[])values[key][1];
+                trianglesintlist.Add(i); 
             }
             triangles = trianglesintlist.ToArray();
             for (int i = 0; i < vertices.Length / 3; i++)
@@ -109,6 +125,8 @@ class MeshSerializer : MonoBehaviour
         Debug.Log("end of getMeshfunction");
         return CloudMeshDict;
     }
+
+    // converts the Dictionary stored in the JSON file to a dict of metadata such as ID and handedness
     public Dictionary<string, List<int>> GetMetadata(string filename_getmetadata)
     {
         byte[] bytes = UnityEngine.Windows.File.ReadAllBytes(persistentPath + filename_getmetadata + ".json");

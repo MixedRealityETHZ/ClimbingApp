@@ -18,8 +18,8 @@ using System.Runtime.CompilerServices;
 
 public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedRealitySpeechHandler
 {
+    // variables needed for application:
     private Handedness myHandedness = Handedness.None;
-    //public Mesh MyMesh;
     public Quaternion rotationpose;
     public Quaternion rotation;
     public bool save = false;
@@ -61,7 +61,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
 
 
     public string filename;
-
     public Vector3 lastRightPosition = new Vector3(0, 0, 0);
     public Vector3 lastLeftPosition = new Vector3(0, 0, 0);
     public int bin_right_hand = 0;
@@ -71,13 +70,10 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
     public float posThreshold = 0.1f;
     public bool right_hand_grasp = false;
     public bool left_hand_grasp = false;
-
-    //private Stack<GameObject> Handstack = new Stack<GameObject>();
-
     public List<GameObject> Handlist = new List<GameObject>();
-    //Spatial Anchors
     public int Count = 0;
 
+    //variables needed for Spatial Anchors:
     public Dictionary<String, Mesh> sessionindependance = new Dictionary<string, Mesh>();
     private SpatialAnchorManager _spatialAnchorManager = null;
     private List<GameObject> _foundOrCreatedAnchorGameObjects = new List<GameObject>();
@@ -85,15 +81,13 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
     public Dictionary<String, Mesh> CloudMeshDict = new Dictionary<string, Mesh>();
     public List<int> HandednesList = new List<int>();
 
-    //storing in JSON file
+    // imports meshserializer script
     MeshSerializer meshserializer;
-    //public GameObject SpawnCube;
-    //public GameObject camera;
+
+    // function called on startup to initialize application
     public void Start()
     {
         Debug.Log("Losgehts");
-        //ButtonReplay.GetComponent
-        //GetComponent<MeshFilter>().mesh = MyMesh;
         ReplayActive = false;
         RecordActive = false;
         replaying = false;
@@ -124,13 +118,8 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
 
         meshserializer.SetPaths();
     }
-    //public void handstackToggle(bool boolean)
-    //{
-    //    for (int i = 0; i < Handstack.Count; i++)
-    //    {
-    //        Handstack.ElementAt(i).SetActive(boolean);
-    //    }
-    //}
+    
+    // deletes created hand list, called when record or replay mode is finnished
     public void deleteHandlist()
     {
         foreach(var objToDel in Handlist)
@@ -140,6 +129,8 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         Handlist.Clear();
         HandednesList.Clear();
     }
+
+    // makes game objects passive in replay mode:
     public void handlistPassive()
     {
         for (int i = 0; i < Handlist.Count; i++)
@@ -147,6 +138,8 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             Handlist[i].GetComponent<MeshRenderer>().material = PassiveMesh_active;
         }
     }
+
+    // Handles bools for replay mode
     public void replayHandler()
     {
         if (ReplayActive == false)
@@ -158,9 +151,9 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         {
             ReplayActive=false;
         }
-        
-
     }
+
+    // Handles bools for record mode
     public void recordHandler()
     {
         if (RecordActive == false)
@@ -174,24 +167,32 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             RecordActive = false;
         }
     }
+
+    // Handles variables for Route 1
     public void Route1Handler()
     {
         route_id = 1;
         filename = "Route1";
         PostRouteMenu();
     }
+
+    // Handles variables for Route 2
     public void Route2Handler()
     {
         route_id = 2;
         filename = "Route2";
         PostRouteMenu();
     }
+
+    // Handles variables for Route 3
     public void Route3Handler()
     {
         route_id = 3;
         filename = "Route3";
         PostRouteMenu();
     }
+
+    // handles functionallity after the route menu is done, if the replay mode is active, the replay initialisation is started
     public void PostRouteMenu()
     {
         visualize_frames = 360;
@@ -200,30 +201,12 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         RouteMenu.SetActive(false);
         if (ReplayActive == true)
         {
-            
             ReplayInit = true;
             Locate();
-            //Thread.Sleep(6000);
-            
-            //Debug.Log("!!!!!!!!!!!!!!!!this is Handlist Count" + Handlist.Count.ToString());
-            //if (Handlist.Count>0)
-            //{
-
-            //    handlistPassive();
-            //    current_grasp = 0;
-            //    Handlist[current_grasp].GetComponent<MeshRenderer>().material = ActiveMesh;
-            //    //handstackToggle(true); //if replay get handsstack from path
-            //    Vector3 startmenuPosition = Handlist[current_grasp].transform.position;
-            //    startmenuPosition.y -= 0.05f;
-            //    StartMenu.transform.position = startmenuPosition;
-                
-                
-                
-            //}
-            //StartMenu.SetActive(true);
         }
-        
     }
+
+    // checks input on play button
     public void playButtonHandler()
     {
         frame_count_start = frame_counter;
@@ -231,6 +214,8 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         replaying = true;
         StartMenu.SetActive(false);
     }
+
+    // checks input on change color button
     public void changeColorButtonHandler()
     {
         if (ColorState == true)
@@ -249,6 +234,8 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         Handlist[current_grasp].GetComponent<MeshRenderer>().material = ActiveMesh_active;
 
     }
+
+    // enables visual feedback, called when visual feedback is necessary
     public void visualizeFeedback()
     {
         if (feedback_to_vis != null)
@@ -266,16 +253,15 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         }
     }
 
-
+    // Enables usage of HoloLens 2 HandMeshHandler and Hololens 2 SpeechHandler
     private void OnEnable()
     {
-        // Instruct Input System that we would like to receive all input events of type
-        // IMixedRealitySourceStateHandler and IMixedRealityHandJointHandler
         CoreServices.InputSystem?.RegisterHandler<IMixedRealityHandMeshHandler>(this);
         CoreServices.InputSystem?.RegisterHandler<IMixedRealitySpeechHandler>(this);
-        //CoreServices.InputSystem?.RegisterHandler<IMixedRealityHandJointHandler> (this);
 
     }
+
+    // called when Hand Mesh is updated by HoloLens 2, HandMesh data is accessed and the correct pose is assigned, if grasp is detected during record mode
     public void OnHandMeshUpdated(InputEventData<HandMeshInfo> eventData)
     {
         if (eventData.Handedness == myHandedness && save == true && recording == true)
@@ -292,28 +278,14 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
                 if (HandJointUtils.TryGetJointPose(TrackedHandJoint.Wrist, myHandedness, out MixedRealityPose pose))
                 {
                     rotation = Quaternion.Euler(-67.5f, 0, 180);
-                    //transform.position = pose.Position;
-                    //transform.rotation = pose.Rotation * rotation;
                     Hand = new GameObject("Hand");
                     Hand.AddComponent<MeshRenderer>();
                     Hand.GetComponent<MeshRenderer>().material = ActiveMesh2;
-                    //if (myHandedness == Handedness.Right)
-                    //{
-                    //    Hand.GetComponent<MeshRenderer>().material = NiceHandRight;
-                    //}
-                    //else
-                    //{
-                    //    Hand.GetComponent<bool>().handedness = false;
-                    //}
                     Hand.AddComponent<MeshFilter>();
                     Hand.GetComponent<MeshFilter>().mesh = MyMesh;
                     Hand.transform.position = pose.Position;
                     Hand.transform.rotation = pose.Rotation * rotation;
-                    //= Instantiate(Hand, pose.Position, pose.Rotation* rotation);
                     GraspDetected(pose.Position, pose.Rotation, MyMesh, Hand, myHandedness);
-                    //Handstack.Push(Hand);
-                    //saveleft = false;
-                    //saveright = false;
                     save = false;
                     myHandedness = Handedness.None;
                 }
@@ -321,6 +293,7 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         }
     }
 
+    // update function includes: activation of Hand Meshes (more pronounced color), sets positions of menus, includes grasp detection algorithm, which runs when record mode is active, "grap detection" in replay mode
     public void Update()
     {
         if (ReplayInit==true)
@@ -328,13 +301,11 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             
             if (frame_counter - frame_count_start > 300)
             {
-                //Debug.Log("!!!!!!!!!!!!!!!!this is Handlist Count" + Handlist.Count.ToString());
                 if (Handlist.Count > 0)
                 {
                     handlistPassive();
                     current_grasp = 0;
                     Handlist[current_grasp].GetComponent<MeshRenderer>().material = ActiveMesh_active;
-                    //handstackToggle(true); //if replay get handsstack from path
                     Vector3 startmenuPosition = Handlist[current_grasp].transform.position;
                     startmenuPosition.y -= 0.05f;
                     StartMenu.transform.position = startmenuPosition;
@@ -379,12 +350,10 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             {
                 if (HandJointUtils.TryGetJointPose(TrackedHandJoint.Wrist, myHandedness, out MixedRealityPose pose))
                 {
-                    //bene und felix 
                     if ((pose.Position - lastRightPosition).magnitude > posDiffThreshold)
                     {
                         save = true;
                         lastRightPosition = pose.Position;
-                        
                     } 
                 }
             }  
@@ -394,7 +363,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         {
             if (HandJointUtils.TryGetJointPose(TrackedHandJoint.Wrist, Handedness.Right, out MixedRealityPose pose))
             {
-                //bene und felix 
                 if (((pose.Position - Handlist[current_grasp].transform.position).magnitude) < 0.075f && HandednesList[current_grasp] == 1)
                 {
 
@@ -413,7 +381,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
                         Handlist[current_grasp].GetComponent<MeshRenderer>().material = ActiveMesh_active;
                     }
                 }
-
             }
         }
         
@@ -424,7 +391,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             {
                 if (HandJointUtils.TryGetJointPose(TrackedHandJoint.Wrist, myHandedness, out MixedRealityPose pose))
                 {
-                    //bene und felix 
                     if ((pose.Position - lastLeftPosition).magnitude > posDiffThreshold)
                     {
                         save = true;
@@ -464,7 +430,7 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         }
      }
         
-    
+    // handles speech commands, if certain keywords are detected, appropriate logic is executed
     public void OnSpeechKeywordRecognized(SpeechEventData eventData)
     {
         if (eventData.Command.Keyword == "Save Right")
@@ -487,7 +453,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         }
         if (eventData.Command.Keyword == "Delete last")
         {
-
             string IDtoRemove = _createdAnchorIDs[_createdAnchorIDs.Count - 1];
             _createdAnchorIDs.RemoveAt(_createdAnchorIDs.Count - 1);
             meshserializer.Dict.Remove(IDtoRemove);
@@ -495,10 +460,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             _foundOrCreatedAnchorGameObjects.RemoveAt(_foundOrCreatedAnchorGameObjects.Count - 1);
             Destroy(destroy_me);
             Count -= 1;
-
-            //GameObject destroyMe = Handlist.Pop();
-            //Destroy(destroyMe);
-            //To DO
         }
         if (eventData.Command.Keyword == "Start")
         {
@@ -520,7 +481,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         }
         if (eventData.Command.Keyword == "Pause")
         {
-
             if (RecordActive==true && route_id!=0)
             {
                 frame_count_start = frame_counter;
@@ -531,7 +491,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             {
                 frame_count_start = frame_counter;
                 feedback_to_vis = PauseFeedback;
-                //handstackToggle(true);
                 replaying = false;
             }
         }
@@ -551,11 +510,9 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
                 recording = false;
                 RecordActive = false;
                 RouteMenu.SetActive(false);
-                //string filename = "Route" + route_id.ToString();
                 meshserializer.SaveData(filename);
                 Count = 0;
                 EndAzureSession();
-                //handstackToggle(false); //handstack save at path with route_id
             }
             
         }
@@ -564,21 +521,25 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             changeColorButtonHandler();
         }
     }
+
     ////////////////////////////////////////////////////////////
-    //Spatial Anchors
+    //Azure Spatial Anchors (ASA)
+    //from here on all functions are related to Azure Spatial Anchors
     ////////////////////////////////////////////////////////////
+    
+    // starts an Azure Spatial Anchor session, called when replay or record mode get activated
     private async void InitRecordSession()
     {
         _spatialAnchorManager.StartSessionAsync();
     }
 
+    // starts the creation of an ASA, gets called when a hand gets detected
     private async void GraspDetected(Vector3 handPosition, Quaternion handRotation, Mesh MyMesh, GameObject hand, Handedness Myhandedness)
     {
-
-        //await _spatialAnchorManager.StartSessionAsync();    //fix try 1
         await CreateAnchor(handPosition, handRotation, MyMesh, hand, Myhandedness);
     }
 
+    // creates an ASA, and calls meshserializer to serialize the mesh corresponding to the anchor
     private async Task CreateAnchor(Vector3 handPosition, Quaternion handRotation, Mesh MyMesh, GameObject hand, Handedness myHandedness)
     {
         CloudNativeAnchor cloudNativeAnchor = hand.AddComponent<CloudNativeAnchor>();
@@ -595,7 +556,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
 
         try
         {
-            // Now that the cloud spatial anchor has been prepared, we can try the actual save here.
             await _spatialAnchorManager.CreateAnchorAsync(cloudSpatialAnchor);
 
             bool saveSucceeded = cloudSpatialAnchor != null;
@@ -621,12 +581,6 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             meshserializer.SerializableMeshInfo(MyMesh, cloudSpatialAnchor.Identifier, handed, Count);
             hand.GetComponent<MeshRenderer>().material.color = Color.green;
             Count++;
-
-
-            // Felix Bene passt bestimmt (nicht gut!)
-            //_spatialAnchorManager.DestroySession();
-            //await _spatialAnchorManager.StartSessionAsync();
-
         }
         catch (Exception exception)
         {
@@ -634,17 +588,19 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
             Debug.LogException(exception);
         }
     }
+
+    // ends the ASA session, called when record or replay modes are finnished
     private async void EndAzureSession()
     {
         if (_spatialAnchorManager.IsSessionStarted)
         {
-            // Stop Session and remove all GameObjects. This does not delete the Anchors in the cloud
             _spatialAnchorManager.DestroySession();
             RemoveAllAnchorGameObjects();
             Debug.Log("ASA - Stopped Session and removed all Anchor Objects");
-
         }
     }
+
+    // initializes a watcher to query and locate the ASA's
     private async void Locate()
     {
         Debug.Log("ASA - Session was not started, going forward with locatAnchor");
@@ -652,7 +608,8 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         
         LocateAnchor();
     }
-        
+    
+    // removes all ASA, to make sure that all created game objects are only visualised once and only visualized when needed
     private void RemoveAllAnchorGameObjects()
     {
         foreach (var hand in _foundOrCreatedAnchorGameObjects)
@@ -662,6 +619,7 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         _foundOrCreatedAnchorGameObjects.Clear();
     }
 
+    // deletes a specific ASA
     private async void DeleteAnchor(GameObject anchorGameObject)
     {
         CloudNativeAnchor cloudNativeAnchor = anchorGameObject.GetComponent<CloudNativeAnchor>();
@@ -680,6 +638,7 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         Debug.Log($"ASA - Cloud anchor deleted!");
     }
 
+    // Locates the queried ASA's
     private void LocateAnchor()
     {
         CloudMeshDict = meshserializer.GetMesh(filename);
@@ -687,16 +646,11 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         CloudMeshDict.Keys.CopyTo(keys, 0);
         if (keys.Count() > 0)
         {
-            //Create watcher to look for all stored anchor IDs
-            //Debug.Log($"ASA - Creating watcher to look for {_createdAnchorIDs.Count} spatial anchors");
             AnchorLocateCriteria anchorLocateCriteria = new AnchorLocateCriteria();
-            //CloudMeshDict = meshserializer.GetMesh();
             foreach (var key in keys)
             {
                 GameObject Meshobject = new GameObject();
                 Handlist.Add(Meshobject);
-
-                //felix und bene waren am werk ;)
                 HandednesList.Add(0);
             }
             anchorLocateCriteria.Identifiers = keys;
@@ -705,16 +659,15 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
         }
     }
 
+    // Handles logic after an ASA is located, Unity Mesh objects are loaded using the meshserializer class
     private void SpatialAnchorManager_AnchorLocated(object sender, AnchorLocatedEventArgs args)
     {
         Debug.Log($"ASA - Anchor recognized as a possible anchor {args.Identifier} {args.Status}");
 
         if (args.Status == LocateAnchorStatus.Located)
         {
-            //Creating and adjusting GameObjects have to run on the main thread. We are using the UnityDispatcher to make sure this happens.
             UnityDispatcher.InvokeOnAppThread(() =>
             {
-                // Read out Cloud Anchor values
                 try
                 {
                     CloudSpatialAnchor cloudSpatialAnchor = args.Anchor;
@@ -725,19 +678,12 @@ public class HandMesh : MonoBehaviour, IMixedRealityHandMeshHandler, IMixedReali
                     Debug.Log(cloudSpatialAnchor.Identifier);
                     anchorGameObject.GetComponent<MeshFilter>().mesh.RecalculateNormals();
                     anchorGameObject.GetComponent<MeshRenderer>().material = ActiveMesh_active;
-                    //Create GameObject
-                    //anchorGameObject.GetComponent<MeshRenderer>().material.color = Color.blue;
-                    // Link to Cloud Anchor
                     anchorGameObject.AddComponent<CloudNativeAnchor>().CloudToNative(cloudSpatialAnchor);
                     Debug.Log("here");
                     Dictionary<string, List<int>> Metadatadict = meshserializer.GetMetadata(filename);
                     Debug.Log(Metadatadict[cloudSpatialAnchor.Identifier][0]);
                     Debug.Log(Handlist.Count);
                     Handlist[Metadatadict[cloudSpatialAnchor.Identifier][0]] = anchorGameObject;
-                    //< Metadatadict[cloudSpatialAnchor.Identifier][0] > = ;
-                    //_foundOrCreatedAnchorGameObjects.Add(anchorGameObject);
-
-                    //felix und bene 
                     HandednesList[Metadatadict[cloudSpatialAnchor.Identifier][0]] = Metadatadict[cloudSpatialAnchor.Identifier][1];
                 }
                 catch (Exception exception)
